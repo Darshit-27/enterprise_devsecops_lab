@@ -15,7 +15,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t enterprise_devsecops_lab -f docker/Dockerfile .
+          docker build -t enterprise-devsecops:latest -f docker/Dockerfile docker/
 
 
 ## trivy code ##
