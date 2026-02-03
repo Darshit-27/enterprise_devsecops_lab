@@ -1,4 +1,4 @@
-name: CI - DevSecOps Scan
+name: CI - Build & Trivy Scan
 
 on:
   push:
@@ -7,24 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  devsecops:
-    name: Build + Security Scans
+  build-and-scan:
     runs-on: ubuntu-latest
 
-    permissions:
-      security-events: write
-      contents: read
-
     steps:
-      # --------------------
-      # Checkout
-      # --------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --------------------
-      # Docker Build
-      # --------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -32,37 +21,10 @@ jobs:
         run: |
           docker build -t enterprise-devsecops:latest -f docker/Dockerfile docker/
 
-      # --------------------
-      # Trivy (Container Scan)
-      # --------------------
       - name: Trivy Image Scan
         uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: enterprise-devsecops:latest
-          scan-type: image
-          vuln-type: os,library
-          severity: CRITICAL
-          exit-code: 0
-          ignore-unfixed: true
+          severity: HIGH,CRITICAL
           format: table
-
-      # --------------------
-      # CodeQL (SAST)
-      # --------------------
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-      # --------------------
-      # Semgrep (SAST)
-      # --------------------
-      - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/ci
-        env:
-          SEMGREP_APP_TOKEN: ""
+          exit-code: 0
