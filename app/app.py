@@ -1,78 +1,48 @@
 from flask import Flask, request, jsonify
 import psycopg2
+import os
 
 app = Flask(__name__)
 
-# Database connection (intentionally simple)
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+
 def get_db():
     return psycopg2.connect(
-        host="db",
-        database="vulnapp",
-        user="vulnuser",
-        password="vulnpass"
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS
     )
 
-@app.route("/login", methods=["POST"])
-def login():
-    username = request.form.get("username")
-    password = request.form.get("password")
+@app.route("/")
+def home():
+    return "Enterprise DevSecOps Vulnerable App"
+
+@app.route("/users")
+def users():
+    username = request.args.get("username")
 
     conn = get_db()
     cur = conn.cursor()
 
-    # ==================================================
     # ❌ VULNERABLE CODE (SQL Injection)
-    # ==================================================
-    # User input is directly concatenated into SQL query
-    # Attacker payload example:
-    # username: admin' OR '1'='1
-    # password: anything
-    query = f"""
-        SELECT id, username
-        FROM users
-        WHERE username = '{username}'
-        AND password = '{password}'
-    """
+    query = f"SELECT id, username, email FROM users WHERE username = '{username}'"
     cur.execute(query)
 
-    user = cur.fetchone()
+    results = cur.fetchall()
+    cur.close()
     conn.close()
 
-    if user:
-        return jsonify({"message": "Login successful", "user": user})
-    else:
-        return jsonify({"message": "Invalid credentials"}), 401
-
+    return jsonify(results)
 
 """
-==================================================
-✅ SECURE CODE (COMMENTED – DO NOT RUN TOGETHER)
-==================================================
+# ✅ SECURE CODE (COMMENTED – FOR REPORT & FIX PHASE)
 
-@app.route("/login", methods=["POST"])
-def login():
-    username = request.form.get("username")
-    password = request.form.get("password")
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    # ✅ Use parameterized queries (prevents SQL injection)
-    query = """
-        SELECT id, username
-        FROM users
-        WHERE username = %s
-        AND password = %s
-    """
-    cur.execute(query, (username, password))
-
-    user = cur.fetchone()
-    conn.close()
-
-    if user:
-        return jsonify({"message": "Login successful", "user": user})
-    else:
-        return jsonify({"message": "Invalid credentials"}), 401
+query = "SELECT id, username, email FROM users WHERE username = %s"
+cur.execute(query, (username,))
 """
 
 if __name__ == "__main__":
