@@ -1,26 +1,31 @@
-version: "3.8"
+version: "3.9"
 
 services:
-  app:
+  web:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    container_name: devsecops_web
+    ports:
+      - "5000:5000"
     env_file:
       - ../app/.env
     depends_on:
       - db
-    ports:
-      - "5000:5000"
 
   db:
     image: postgres:15
+    container_name: devsecops_db
+    restart: always
     environment:
       POSTGRES_DB: vulndb
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
 
 volumes:
-  db_data:
+  postgres_data:
