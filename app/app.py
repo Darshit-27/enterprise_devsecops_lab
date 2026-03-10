@@ -6,10 +6,14 @@ app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
 
+# Create uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 
+# ---------------------------
+# Home Route
+# ---------------------------
 @app.route("/")
 def home():
     return "Enterprise DevSecOps Lab Running"
@@ -18,7 +22,7 @@ def home():
 # ---------------------------
 # SQL Injection Vulnerability
 # ---------------------------
-@app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
@@ -68,7 +72,7 @@ def ping():
 # ---------------------------
 # File Upload Vulnerability
 # ---------------------------
-@app.route("/upload", methods=["GET","POST"])
+@app.route("/upload", methods=["GET", "POST"])
 def upload():
 
     if request.method == "POST":
@@ -103,5 +107,8 @@ def download():
     return send_file(path)
 
 
+# ---------------------------
+# Run Application
+# ---------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",port=5000)
+    app.run(host="0.0.0.0", port=5000)
