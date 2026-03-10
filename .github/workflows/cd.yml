@@ -24,5 +24,6 @@ jobs:
             set -e
             cd /home/deploy/enterprise_devsecops_lab
             git pull origin main
-            docker compose -f docker/docker-compose.yml down
+            docker compose -f docker/docker-compose.yml down --remove-orphans
+            docker container prune -f
             docker compose -f docker/docker-compose.yml up -d --build
