@@ -1,12 +1,13 @@
 from flask import Flask, request, send_file
 import os
 import subprocess
+import psycopg2
 
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
 
-# Create uploads folder if it doesn't exist
+# Create uploads folder
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -16,11 +17,11 @@ if not os.path.exists(UPLOAD_FOLDER):
 # ---------------------------
 @app.route("/")
 def home():
-    return "Enterprise DevSecOps Lab Running"
+    return "<h2>Enterprise DevSecOps Lab Running</h2>"
 
 
 # ---------------------------
-# SQL Injection Vulnerability
+# SQL Injection (REAL AUTH)
 # ---------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -29,9 +30,31 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
+        # ⚠️ Intentionally vulnerable query
         query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
 
-        return f"Executing query: {query}"
+        try:
+            conn = psycopg2.connect(
+                host="db",
+                database="vulndb",
+                user="admin",
+                password="admin123"
+            )
+
+            cur = conn.cursor()
+            cur.execute(query)
+            result = cur.fetchone()
+
+            cur.close()
+            conn.close()
+
+            if result:
+                return "<h2 style='color:green;'>Login Successful</h2>"
+            else:
+                return "<h2 style='color:red;'>Invalid Credentials</h2>"
+
+        except Exception as e:
+            return f"<pre>{e}</pre>"
 
     return """
     <h2>Login</h2>
@@ -48,10 +71,8 @@ def login():
 # ---------------------------
 @app.route("/search")
 def search():
-
-    q = request.args.get("q")
-
-    return f"Search results for: {q}"
+    q = request.args.get("q", "")
+    return f"<h3>Search results for: {q}</h3>"
 
 
 # ---------------------------
@@ -59,11 +80,9 @@ def search():
 # ---------------------------
 @app.route("/ping")
 def ping():
-
-    host = request.args.get("host")
+    host = request.args.get("host", "")
 
     cmd = f"ping -c 1 {host}"
-
     output = subprocess.getoutput(cmd)
 
     return f"<pre>{output}</pre>"
@@ -76,14 +95,15 @@ def ping():
 def upload():
 
     if request.method == "POST":
+        file = request.files.get("file")
 
-        file = request.files["file"]
+        if not file:
+            return "No file uploaded"
 
         path = os.path.join(UPLOAD_FOLDER, file.filename)
-
         file.save(path)
 
-        return f"File saved to {path}"
+        return f"<h3>File saved to {path}</h3>"
 
     return """
     <h2>Upload File</h2>
@@ -99,16 +119,13 @@ def upload():
 # ---------------------------
 @app.route("/download")
 def download():
-
-    file = request.args.get("file")
-
+    file = request.args.get("file", "")
     path = f"./uploads/{file}"
-
     return send_file(path)
 
 
 # ---------------------------
-# Run Application
+# Run App
 # ---------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
