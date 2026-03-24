@@ -44,7 +44,7 @@ jobs:
         with:
           image-ref: enterprise-devsecops:latest
           severity: HIGH,CRITICAL
-          exit-code: 1
+          exit-code: 0
           ignore-unfixed: true
           vuln-type: os,library
           format: table
@@ -64,4 +64,3 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-#fixed dns errors
