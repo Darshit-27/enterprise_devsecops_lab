@@ -35,19 +35,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
       - name: Build image for Trivy
         run: |
           docker build -t enterprise-devsecops:latest -f docker/Dockerfile .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: enterprise-devsecops:latest
           severity: HIGH,CRITICAL
-          exit-code: 0
+          exit-code: 1
           ignore-unfixed: true
           vuln-type: os,library
           format: table
