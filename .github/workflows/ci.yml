@@ -44,6 +44,7 @@ jobs:
         with:
           image-ref: enterprise-devsecops:latest
           severity: HIGH,CRITICAL
+#exit code 0 to work
           exit-code: 0
           ignore-unfixed: true
           vuln-type: os,library
