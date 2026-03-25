@@ -1,4 +1,5 @@
-from flask import Flask, request, send_file, escape
+from flask import Flask, request, send_file
+from markupsafe import escape
 import os
 import subprocess
 import logging
