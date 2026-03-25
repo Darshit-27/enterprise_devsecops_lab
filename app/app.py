@@ -1,7 +1,7 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, escape
 import os
 import subprocess
-import psycopg2
+import logging
 
 app = Flask(__name__)
 
@@ -11,17 +11,34 @@ UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# ---------------------------
+# LOGGING SETUP
+# ---------------------------
+logging.basicConfig(
+    filename='app.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def detect_attack(input_data):
+    attack_patterns = ["'", "--", ";", "<script>", "||", "&&"]
+    for pattern in attack_patterns:
+        if pattern in str(input_data):
+            logging.warning(f"⚠️ Possible attack detected: {input_data}")
+            return True
+    return False
+
 
 # ---------------------------
-# Home Route
+# HOME
 # ---------------------------
 @app.route("/")
 def home():
-    return "<h2>Enterprise DevSecOps Lab Running</h2>"
+    return "Enterprise DevSecOps Lab Running"
 
 
 # ---------------------------
-# SQL Injection (REAL AUTH)
+# SQL Injection (VULNERABLE)
 # ---------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -30,34 +47,16 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        # ⚠️ Intentionally vulnerable query
+        logging.info(f"Login attempt: {username}")
+
+        if detect_attack(username) or detect_attack(password):
+            return "⚠️ Suspicious input detected!"
+
         query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
-
-        try:
-            conn = psycopg2.connect(
-                host="db",
-                database="vulndb",
-                user="admin",
-                password="admin123"
-            )
-
-            cur = conn.cursor()
-            cur.execute(query)
-            result = cur.fetchone()
-
-            cur.close()
-            conn.close()
-
-            if result:
-                return "<h2 style='color:green;'>Login Successful</h2>"
-            else:
-                return "<h2 style='color:red;'>Invalid Credentials</h2>"
-
-        except Exception as e:
-            return f"<pre>{e}</pre>"
+        return f"Executing query: {query}"
 
     return """
-    <h2>Login</h2>
+    <h2>Login (Vulnerable)</h2>
     <form method="POST">
     Username: <input name="username"><br>
     Password: <input name="password"><br>
@@ -67,20 +66,63 @@ def login():
 
 
 # ---------------------------
-# XSS Vulnerability
+# SQL Injection (SECURE)
+# ---------------------------
+@app.route("/secure-login", methods=["GET", "POST"])
+def secure_login():
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # Hardcoded validation (safe simulation)
+        if username == "admin" and password == "password":
+            return "✅ Login successful (Secure)"
+        else:
+            return "❌ Invalid credentials"
+
+    return """
+    <h2>Login (Secure)</h2>
+    <form method="POST">
+    Username: <input name="username"><br>
+    Password: <input name="password"><br>
+    <button type="submit">Login</button>
+    </form>
+    """
+
+
+# ---------------------------
+# XSS (VULNERABLE)
 # ---------------------------
 @app.route("/search")
 def search():
-    q = request.args.get("q", "")
-    return f"<h3>Search results for: {q}</h3>"
+    q = request.args.get("q")
+
+    if detect_attack(q):
+        return "⚠️ XSS attempt detected!"
+
+    return f"Search results for: {q}"
 
 
 # ---------------------------
-# Command Injection
+# XSS (SECURE)
+# ---------------------------
+@app.route("/secure-search")
+def secure_search():
+    q = request.args.get("q")
+
+    return f"Search results for: {escape(q)}"
+
+
+# ---------------------------
+# COMMAND INJECTION (VULNERABLE)
 # ---------------------------
 @app.route("/ping")
 def ping():
-    host = request.args.get("host", "")
+    host = request.args.get("host")
+
+    if detect_attack(host):
+        return "⚠️ Command Injection detected!"
 
     cmd = f"ping -c 1 {host}"
     output = subprocess.getoutput(cmd)
@@ -89,21 +131,19 @@ def ping():
 
 
 # ---------------------------
-# File Upload Vulnerability
+# FILE UPLOAD (VULNERABLE)
 # ---------------------------
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
 
     if request.method == "POST":
-        file = request.files.get("file")
-
-        if not file:
-            return "No file uploaded"
-
+        file = request.files["file"]
         path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(path)
 
-        return f"<h3>File saved to {path}</h3>"
+        logging.info(f"File uploaded: {file.filename}")
+
+        file.save(path)
+        return f"File saved to {path}"
 
     return """
     <h2>Upload File</h2>
@@ -115,17 +155,33 @@ def upload():
 
 
 # ---------------------------
-# Directory Traversal
+# DIRECTORY TRAVERSAL (VULNERABLE)
 # ---------------------------
 @app.route("/download")
 def download():
-    file = request.args.get("file", "")
+    file = request.args.get("file")
+
+    if detect_attack(file):
+        return "⚠️ Directory Traversal detected!"
+
     path = f"./uploads/{file}"
     return send_file(path)
 
 
 # ---------------------------
-# Run App
+# VIEW LOGS (VERY IMPORTANT)
+# ---------------------------
+@app.route("/logs")
+def view_logs():
+    try:
+        with open("app.log", "r") as f:
+            return f"<pre>{f.read()}</pre>"
+    except:
+        return "No logs found"
+
+
+# ---------------------------
+# RUN APP
 # ---------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
