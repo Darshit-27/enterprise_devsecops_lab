@@ -27,19 +27,19 @@ Built on AWS EC2 (Mumbai region) with a focus on **practical implementation, end
 
 ## 🏗️ System Architecture
 
-![Architecture](images/architecture.svg)
+![Architecture](images/architecture.png)
 
 ---
 
 ## 🔁 CI/CD Pipeline Flow
 
-![Pipeline](images/pipeline.svg)
+![Pipeline](images/pipeline.png)
 
 ---
 
 ## 🎯 VAPT Attack Surface
 
-![VAPT](images/vapt.svg)
+![VAPT](images/vapt.png)
 
 ---
 
